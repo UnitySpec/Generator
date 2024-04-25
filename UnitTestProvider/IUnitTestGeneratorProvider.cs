@@ -14,7 +14,7 @@ namespace UnitySpec.Generator.UnitTestProvider
         void SetTestClassNonParallelizable(TestClassGenerationContext generationContext);
 
         void SetTestClassInitializeMethod(TestClassGenerationContext generationContext);
-        void SetTestClassCleanupMethod(TestClassGenerationContext generationContext);
+        //void SetTestClassCleanupMethod(TestClassGenerationContext generationContext);
 
         void SetTestInitializeMethod(TestClassGenerationContext generationContext);
         void SetTestCleanupMethod(TestClassGenerationContext generationContext);

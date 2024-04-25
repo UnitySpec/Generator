@@ -17,6 +17,11 @@ namespace UnitySpec.Generator.Roslyn
             TargetLanguage = targetLanguage;
         }
 
+        public TypeSyntax IEnumeratorType()
+        {
+            return GetName("System.Collections.IEnumerator");
+        }
+
 
         public SyntaxTrivia GetStartRegionStatement(string regionText)
         {

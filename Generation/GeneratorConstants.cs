@@ -10,7 +10,7 @@
         public const string TEST_INITIALIZE_NAME = "TestInitialize";
         public const string TEST_CLEANUP_NAME = "TestTearDown";
         public const string TESTCLASS_INITIALIZE_NAME = "FeatureSetup";
-        public const string TESTCLASS_CLEANUP_NAME = "FeatureTearDown";
+        public const string TESTCLASS_UNITY_ONETIME_SETUP_NAME = "UnityOneTimeSetup";
         public const string BACKGROUND_NAME = "FeatureBackground";
         public const string TESTRUNNER_FIELD = "testRunner";
         public const string UNITYSPEC_NAMESPACE = "UnitySpec";
