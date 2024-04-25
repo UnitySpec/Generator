@@ -50,7 +50,7 @@ namespace UnitySpec.Generator.Generation
 
             SetupTestClass(generationContext);
             SetupTestClassInitializeMethod(generationContext);
-            SetupTestClassCleanupMethod(generationContext);
+            SetupTestClassUnitySetupMethod(generationContext);
 
             SetupScenarioStartMethod(generationContext);
             SetupScenarioInitializeMethod(generationContext);
@@ -78,8 +78,8 @@ namespace UnitySpec.Generator.Generation
                 _roslynHelper.CreateGeneratedTypeDeclaration(testClassName),
                 DeclareTestRunnerMember(),
                 _roslynHelper.CreateMethod(GeneratorConstants.TESTCLASS_INITIALIZE_NAME),
-                _roslynHelper.CreateMethod(GeneratorConstants.TESTCLASS_CLEANUP_NAME),
-                _roslynHelper.CreateMethod(GeneratorConstants.TEST_INITIALIZE_NAME),
+                _roslynHelper.CreateMethod(GeneratorConstants.TESTCLASS_UNITY_ONETIME_SETUP_NAME, _roslynHelper.IEnumeratorType()),
+                _roslynHelper.CreateMethod(GeneratorConstants.TEST_INITIALIZE_NAME, _roslynHelper.IEnumeratorType()),
                 _roslynHelper.CreateMethod(GeneratorConstants.TEST_CLEANUP_NAME),
                 _roslynHelper.CreateMethod(GeneratorConstants.SCENARIO_INITIALIZE_NAME),
                 _roslynHelper.CreateMethod(GeneratorConstants.SCENARIO_START_NAME),
@@ -204,7 +204,16 @@ namespace UnitySpec.Generator.Generation
                     )
                 ));
 
-            //FeatureInfo featureInfo = new FeatureInfo("xxxx");
+            // Add featureInfo variable to class
+            generationContext.ExtraFields.Add(
+                FieldDeclaration(
+                    VariableDeclaration(
+                        _roslynHelper.GetName("UnitySpec.FeatureInfo"))
+                            .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier("featureInfo"))))
+                    )
+                .WithModifiers(TokenList(Token(SyntaxKind.PrivateKeyword))));
+
+            //featureInfo = new FeatureInfo("xxxx");
             var arguments = _roslynHelper.GetArgumentList(
                 ObjectCreationExpression(
                     _roslynHelper.GetName("System.Globalization.CultureInfo")
@@ -216,22 +225,13 @@ namespace UnitySpec.Generator.Generation
                 _roslynHelper.GetMemberAccess(_roslynHelper.TargetLanguage.GetLanguage()),
                 _roslynHelper.GetName(GeneratorConstants.FEATURE_TAGS_VARIABLE_NAME)
                 );
-            var featureInfoDecl = VariableDeclaration(_roslynHelper.GetName("UnitySpec.FeatureInfo"))
-                .WithVariables(SingletonSeparatedList(
-                    VariableDeclarator(Identifier("featureInfo"))
-                    .WithInitializer(EqualsValueClause(
-                        ObjectCreationExpression(_roslynHelper.GetName("UnitySpec.FeatureInfo"))
-                        .WithArgumentList(arguments)
-                    ))
-                ));
+            var featureInfoDecl = AssignmentExpression(
+                SyntaxKind.SimpleAssignmentExpression,
+                IdentifierName("featureInfo"),
+                ObjectCreationExpression(_roslynHelper.GetName("UnitySpec.FeatureInfo"))
+                        .WithArgumentList(arguments) );
 
-            statements.Add(LocalDeclarationStatement(featureInfoDecl));
-
-            //testRunner.OnFeatureStart(featureInfo);
-            statements.Add(ExpressionStatement(
-                InvocationExpression(_roslynHelper.GetMemberAccess($"{GeneratorConstants.TESTRUNNER_FIELD}.OnFeatureStart"))
-                .WithArgumentList(_roslynHelper.GetArgumentList(IdentifierName("featureInfo")))
-                ));
+            statements.Add(ExpressionStatement(featureInfoDecl));
 
             generationContext.TestClassInitializeMethod =
                 generationContext.TestClassInitializeMethod
@@ -240,30 +240,24 @@ namespace UnitySpec.Generator.Generation
         }
 
 
-        private void SetupTestClassCleanupMethod(TestClassGenerationContext generationContext)
+        private void SetupTestClassUnitySetupMethod(TestClassGenerationContext generationContext)
         {
-            var testClassCleanupMethod = generationContext.TestClassCleanupMethod;
+            var testClassUnitySetupMethod = generationContext.TestClassUnitySetupMethod;
 
-            testClassCleanupMethod = testClassCleanupMethod.AddModifiers(Token(SyntaxKind.PublicKeyword));
+            testClassUnitySetupMethod = testClassUnitySetupMethod.AddModifiers(Token(SyntaxKind.PublicKeyword));
 
-            _testGeneratorProvider.SetTestClassCleanupMethod(generationContext);
+            //_testGeneratorProvider.SetTestClassCleanupMethod(generationContext);
 
-            var testRunnerField = _scenarioPartHelper.GetTestRunnerExpression();
-            var statements = testClassCleanupMethod.Body.Statements.ToList();
-            //            testRunner.OnFeatureEnd();
-            statements.Add(ExpressionStatement(
-                InvocationExpression(_roslynHelper.GetMemberAccess($"{GeneratorConstants.TESTRUNNER_FIELD}.OnFeatureEnd"))
-                ));
-            //            testRunner = null;
-            statements.Add(ExpressionStatement(
-                AssignmentExpression(
-                    SyntaxKind.SimpleAssignmentExpression,
-                    testRunnerField,
-                    LiteralExpression(SyntaxKind.NullLiteralExpression)
-                    )
-                ));
+            var statements = testClassUnitySetupMethod.Body.Statements.ToList();
 
-            generationContext.TestClassCleanupMethod = testClassCleanupMethod.WithBody(Block(statements));
+            //yield return testRunner.OnFeatureStart(featureInfo);
+            statements.Add(YieldStatement(SyntaxKind.YieldReturnStatement,
+                InvocationExpression(_roslynHelper.GetMemberAccess($"{GeneratorConstants.TESTRUNNER_FIELD}.OnFeatureStart"))
+                .WithArgumentList(_roslynHelper.GetArgumentList(IdentifierName("featureInfo")))));
+
+
+
+            generationContext.TestClassUnitySetupMethod = testClassUnitySetupMethod.WithBody(Block(statements));
         }
 
         private void SetupTestInitializeMethod(TestClassGenerationContext generationContext)
@@ -274,7 +268,44 @@ namespace UnitySpec.Generator.Generation
 
             _testGeneratorProvider.SetTestInitializeMethod(generationContext);
 
-            generationContext.TestInitializeMethod = generationContext.TestInitializeMethod.WithModifiers(mods);
+            var statements = testInitializeMethod.Body.Statements.ToList();
+
+            // Add initialized variable to class
+            // private bool initialized = false;
+            generationContext.ExtraFields.Add(
+                FieldDeclaration(
+                    VariableDeclaration(
+                        PredefinedType(Token(SyntaxKind.BoolKeyword))
+                        )
+                    .WithVariables(
+                        SingletonSeparatedList(
+                            VariableDeclarator(Identifier("initialized"))
+                            .WithInitializer(EqualsValueClause(LiteralExpression(SyntaxKind.FalseLiteralExpression)))
+                            )
+                        )
+                    )
+                .WithModifiers(TokenList(Token(SyntaxKind.PrivateKeyword))));
+
+            // !initialized
+            var condStmnt = PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, IdentifierName("initialized"));
+            // initialized = true
+            var initStmnt = ExpressionStatement(
+                                AssignmentExpression(
+                                    SyntaxKind.SimpleAssignmentExpression,
+                                    IdentifierName("initialized"),
+                                    LiteralExpression(SyntaxKind.TrueLiteralExpression)
+                                    )
+                                );
+            // yield return UnityOneTimeSetup();
+            var yieldStmnt = YieldStatement(
+                    SyntaxKind.YieldReturnStatement,
+                    InvocationExpression(
+                        IdentifierName("UnityOneTimeSetup")
+                        )
+                    );
+            statements.Add(IfStatement(condStmnt, Block(initStmnt, yieldStmnt)));
+
+            generationContext.TestInitializeMethod = generationContext.TestInitializeMethod.WithBody(Block(statements)).WithModifiers(mods);
         }
 
         private void SetupTestCleanupMethod(TestClassGenerationContext generationContext)

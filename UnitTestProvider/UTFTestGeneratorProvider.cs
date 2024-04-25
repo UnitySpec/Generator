@@ -19,8 +19,8 @@ namespace UnitySpec.Generator.UnitTestProvider
         protected internal const string TEST_ATTR = "UnityEngine.TestTools.UnityTestAttribute";
         protected internal const string ROW_ATTR = "NUnit.Framework.TestCaseAttribute";
         protected internal const string CATEGORY_ATTR = "NUnit.Framework.CategoryAttribute";
-        protected internal const string TESTSETUP_ATTR = "NUnit.Framework.SetUpAttribute";
-        protected internal const string TESTTEARDOWN_ATTR = "NUnit.Framework.TearDownAttribute";
+        protected internal const string TESTSETUP_ATTR = "UnityEngine.TestTools.UnitySetUpAttribute";
+        protected internal const string TESTTEARDOWN_ATTR = "UnityEngine.TestTools.UnityTearDownAttribute";
         protected internal const string IGNORE_ATTR = "NUnit.Framework.IgnoreAttribute";
         protected internal const string DESCRIPTION_ATTR = "NUnit.Framework.DescriptionAttribute";
         protected internal const string TESTCONTEXT_TYPE = "NUnit.Framework.TestContext";
@@ -61,12 +61,12 @@ namespace UnitySpec.Generator.UnitTestProvider
                     );
         }
 
-        public virtual void SetTestClassCleanupMethod(TestClassGenerationContext generationContext)
-        {
-            generationContext.TestClassCleanupMethod = generationContext.TestClassCleanupMethod.AddAttributeLists(
-                    roslynHelper.GetAttribute(TESTFIXTURETEARDOWN_ATTR_NUNIT3)
-                );
-        }
+        //public virtual void SetTestClassCleanupMethod(TestClassGenerationContext generationContext)
+        //{
+        //    generationContext.TestClassUnitySetupMethod = generationContext.TestClassUnitySetupMethod.AddAttributeLists(
+        //            roslynHelper.GetAttribute(TESTFIXTURETEARDOWN_ATTR_NUNIT3)
+        //        );
+        //}
 
         public virtual void SetTestClassNonParallelizable(TestClassGenerationContext generationContext)
         {

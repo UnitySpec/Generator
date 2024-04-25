@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\UnityFlow.General\UnitySpec.General.csproj" />
+    <ProjectReference Include="..\UnitySpec.General\UnitySpec.General.csproj" />
   </ItemGroup>
 
 </Project>

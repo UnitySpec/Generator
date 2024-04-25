@@ -17,7 +17,7 @@ namespace UnitySpec.Generator
         public NamespaceDeclarationSyntax Namespace { get; private set; }
         public ClassDeclarationSyntax TestClass { get; set; }
         public MethodDeclarationSyntax TestClassInitializeMethod { get; set; }
-        public MethodDeclarationSyntax TestClassCleanupMethod { get; set; }
+        public MethodDeclarationSyntax TestClassUnitySetupMethod { get; set; }
         public MethodDeclarationSyntax TestInitializeMethod { get; set; }
         public MethodDeclarationSyntax TestCleanupMethod { get; set; }
         public MethodDeclarationSyntax ScenarioInitializeMethod { get; set; }
@@ -25,6 +25,7 @@ namespace UnitySpec.Generator
         public MethodDeclarationSyntax ScenarioCleanupMethod { get; set; }
         public MethodDeclarationSyntax FeatureBackgroundMethod { get; set; }
         public FieldDeclarationSyntax TestRunnerField { get; set; }
+        public List<FieldDeclarationSyntax> ExtraFields { get; set; }
 
         public bool GenerateRowTests { get; private set; }
 
@@ -52,7 +53,7 @@ namespace UnitySpec.Generator
             TestClass = testClass;
             TestRunnerField = testRunnerField;
             TestClassInitializeMethod = testClassInitializeMethod;
-            TestClassCleanupMethod = testClassCleanupMethod;
+            TestClassUnitySetupMethod = testClassCleanupMethod;
             TestInitializeMethod = testInitializeMethod;
             TestCleanupMethod = testCleanupMethod;
             ScenarioInitializeMethod = scenarioInitializeMethod;
@@ -61,6 +62,7 @@ namespace UnitySpec.Generator
             FeatureBackgroundMethod = featureBackgroundMethod;
             GenerateRowTests = generateRowTests;
 
+            ExtraFields = new List<FieldDeclarationSyntax>();
             CustomData = new Dictionary<string, object>();
         }
 
@@ -71,18 +73,19 @@ namespace UnitySpec.Generator
 
         private ClassDeclarationSyntax BuildTestClass()
         {
-            var members = new MemberDeclarationSyntax[]
+            var members = new List<MemberDeclarationSyntax>()
                 {
                     TestRunnerField,
                     TestClassInitializeMethod,
-                    TestClassCleanupMethod,
+                    TestClassUnitySetupMethod,
                     TestInitializeMethod,
                     TestCleanupMethod,
                     ScenarioInitializeMethod,
                     ScenarioStartMethod,
                     ScenarioCleanupMethod
                 };
-            if (FeatureBackgroundMethod != null) { members = (MemberDeclarationSyntax[])members.Append(FeatureBackgroundMethod); }
+            members.AddRange(ExtraFields);
+            if (FeatureBackgroundMethod != null) { members.Add(FeatureBackgroundMethod); }
             var allMembers = TestClass.Members.AddRange(members);
             return TestClass.WithMembers(List<MemberDeclarationSyntax>(allMembers));
         }
